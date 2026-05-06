@@ -87,6 +87,7 @@ const today = new Date();
 const fmt = d => d.toISOString().split("T")[0];
 const addD = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
 
+const USED_CODES = ["VIP2026011","VIP2026039"];
 const initVouchers = DEPTS.flatMap(dept =>
   dept.nums.map(n => ({
     id: `v${n}`,
@@ -96,10 +97,13 @@ const initVouchers = DEPTS.flatMap(dept =>
     phone: "",
     validFrom: "2026-01-01",
     validUntil: "2026-12-31",
-    status: "unused",
+    status: USED_CODES.includes(`VIP2026${String(n).padStart(3,"0")}`) ? "used" : "unused",
   }))
 ).sort((a,b) => parseInt(a.code.replace(/\D/g,""),10) - parseInt(b.code.replace(/\D/g,""),10));
-const initRes = [];
+const initRes = [
+  {id:"r1",reservationNumber:"GR-20260001",voucherCode:"VIP2026011",customerName:"",phone:"",date:"",time:"",requestMessage:"",status:"completed",createdAt:""},
+  {id:"r2",reservationNumber:"GR-20260002",voucherCode:"VIP2026039",customerName:"",phone:"",date:"",time:"",requestMessage:"",status:"completed",createdAt:""},
+];
 const initSlots = [
   {id:"s1", date:"2026-05-08",time:"09:00",isOpen:true, bookedCount:0},
   {id:"s2", date:"2026-05-08",time:"11:00",isOpen:true, bookedCount:0},
@@ -585,6 +589,8 @@ const AdminRes = ({reservations, setRes, page, go}) => {
   const [fDept, setFDept] = useState("all");
   const [search, setSearch] = useState("");
   const [exp, setExp] = useState(null);
+  const [editId, setEditId] = useState(null);
+  const [editData, setEditData] = useState({});
   const filtered = reservations.filter(r=>{
     const ms = fStat==="all"||r.status===fStat;
     const md = fDept==="all"||getDept(r.voucherCode)?.key===fDept;
@@ -593,6 +599,8 @@ const AdminRes = ({reservations, setRes, page, go}) => {
     return ms&&md&&mq;
   });
   const chStat = (id,s) => setRes(p=>p.map(r=>r.id===id?{...r,status:s}:r));
+  const startEdit = r => { setEditId(r.id); setEditData({customerName:r.customerName,phone:r.phone,date:r.date,time:r.time,requestMessage:r.requestMessage,createdAt:r.createdAt}); };
+  const saveEdit = id => { setRes(p=>p.map(r=>r.id===id?{...r,...editData}:r)); setEditId(null); };
   return (
     <Shell page={page} go={go}>
       <div style={{marginBottom:16,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
@@ -630,21 +638,41 @@ const AdminRes = ({reservations, setRes, page, go}) => {
                 </div>
                 {isE&&(
                   <div style={{padding:"14px 16px 18px",background:"rgba(46,125,94,0.02)",borderTop:"1px solid var(--line)"}}>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12,marginBottom:14}}>
-                      {[["예약번호",r.reservationNumber],["바우처",r.voucherCode],["예약자",r.customerName],["휴대폰",r.phone],["날짜·시간",`${r.date} ${r.time}`],["접수일",r.createdAt]].map(([l,v])=>(
-                        <div key={l}>
-                          <span style={{fontSize:"0.65rem",fontWeight:700,color:"var(--text3)",display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.06em"}}>{l}</span>
-                          <span style={{fontSize:"0.82rem",color:"var(--text)",fontWeight:700}}>{v}</span>
+                    {editId===r.id ? (
+                      <div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12,marginBottom:14}}>
+                          <div><label className="lbl">예약자 이름</label><input className="inp" value={editData.customerName} onChange={e=>setEditData(p=>({...p,customerName:e.target.value}))} placeholder="이름" style={{padding:"7px 10px"}}/></div>
+                          <div><label className="lbl">휴대폰</label><input className="inp" value={editData.phone} onChange={e=>setEditData(p=>({...p,phone:e.target.value}))} placeholder="010-0000-0000" style={{padding:"7px 10px"}}/></div>
+                          <div><label className="lbl">이용 날짜</label><input type="date" className="inp" value={editData.date} onChange={e=>setEditData(p=>({...p,date:e.target.value}))} style={{padding:"7px 10px"}}/></div>
+                          <div><label className="lbl">이용 시간</label><input type="time" className="inp" value={editData.time} onChange={e=>setEditData(p=>({...p,time:e.target.value}))} style={{padding:"7px 10px"}}/></div>
+                          <div><label className="lbl">접수일</label><input type="date" className="inp" value={editData.createdAt} onChange={e=>setEditData(p=>({...p,createdAt:e.target.value}))} style={{padding:"7px 10px"}}/></div>
+                          <div><label className="lbl">요청사항</label><input className="inp" value={editData.requestMessage} onChange={e=>setEditData(p=>({...p,requestMessage:e.target.value}))} placeholder="없음" style={{padding:"7px 10px"}}/></div>
                         </div>
-                      ))}
-                    </div>
-                    {r.requestMessage&&<div style={{padding:"9px 13px",background:"var(--bg)",borderRadius:10,fontSize:"0.8rem",color:"var(--text2)",marginBottom:14,fontWeight:500}}>💬 요청사항: {r.requestMessage}</div>}
-                    <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-                      <span style={{fontSize:"0.72rem",color:"var(--text2)",fontWeight:700}}>상태 변경:</span>
-                      <select value={r.status} onChange={e=>chStat(r.id,e.target.value)} className="inp" style={{maxWidth:160,padding:"7px 11px",fontSize:"0.8rem"}}>
-                        {["pending","confirmed","change_requested","cancel_requested","cancelled","completed"].map(s=><option key={s} value={s}>{statusLabel(s)}</option>)}
-                      </select>
-                    </div>
+                        <div style={{display:"flex",gap:8}}>
+                          <button onClick={()=>saveEdit(r.id)} className="btn btn-g" style={{fontSize:"0.82rem",padding:"8px 18px"}}>저장</button>
+                          <button onClick={()=>setEditId(null)} className="btn btn-o" style={{fontSize:"0.82rem",padding:"8px 18px"}}>취소</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12,marginBottom:14}}>
+                          {[["예약번호",r.reservationNumber],["바우처",r.voucherCode],["예약자",r.customerName||"—"],["휴대폰",r.phone||"—"],["날짜·시간",r.date?`${r.date} ${r.time}`:"—"],["접수일",r.createdAt||"—"]].map(([l,v])=>(
+                            <div key={l}>
+                              <span style={{fontSize:"0.65rem",fontWeight:700,color:"var(--text3)",display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.06em"}}>{l}</span>
+                              <span style={{fontSize:"0.82rem",color:v==="—"?"var(--text3)":"var(--text)",fontWeight:700}}>{v}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {r.requestMessage&&<div style={{padding:"9px 13px",background:"var(--bg)",borderRadius:10,fontSize:"0.8rem",color:"var(--text2)",marginBottom:14,fontWeight:500}}>💬 요청사항: {r.requestMessage}</div>}
+                        <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                          <button onClick={()=>startEdit(r)} className="btn btn-o" style={{fontSize:"0.78rem",padding:"7px 16px"}}>✏️ 정보 수정</button>
+                          <span style={{fontSize:"0.72rem",color:"var(--text2)",fontWeight:700}}>상태:</span>
+                          <select value={r.status} onChange={e=>chStat(r.id,e.target.value)} className="inp" style={{maxWidth:160,padding:"7px 11px",fontSize:"0.8rem"}}>
+                            {["pending","confirmed","change_requested","cancel_requested","cancelled","completed"].map(s=><option key={s} value={s}>{statusLabel(s)}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
