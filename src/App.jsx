@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import * as XLSX from "xlsx";
 
 const G = () => (
   <style>{`
@@ -1019,9 +1020,45 @@ const AdminEvd = ({reservations, page, go}) => {
     setSaveMsg("✅ 메모가 저장됐어요!"); setTimeout(()=>setSaveMsg(""),2500);
   };
   const rmFile = i => { setEv(p=>{const c=p[selR.id]||{files:[],memo:""};return {...p,[selR.id]:{...c,files:c.files.filter((_,j)=>j!==i)}};}) };
+
+  const exportExcel = () => {
+    const deptLabel = code => { const d = getDept(code); return d ? d.label : ""; };
+    const rows = reservations.map(r => {
+      const ev = evMap[r.id] || {files:[], memo:""};
+      return {
+        "예약번호": r.reservationNumber,
+        "바우처코드": r.voucherCode,
+        "부문": deptLabel(r.voucherCode),
+        "예약자명": r.customerName,
+        "연락처": r.phone,
+        "날짜": r.date,
+        "시간": r.time,
+        "예약상태": statusLabel(r.status),
+        "메모": ev.memo || "",
+        "첨부파일 수": ev.files.length,
+        "첨부파일 목록": ev.files.map(f=>f.name).join(", "),
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    // 컬럼 너비 설정
+    ws["!cols"] = [
+      {wch:14},{wch:14},{wch:14},{wch:10},{wch:14},
+      {wch:12},{wch:8},{wch:10},{wch:30},{wch:8},{wch:40}
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "증빙자료");
+    const today = new Date().toISOString().split("T")[0].replace(/-/g,"");
+    XLSX.writeFile(wb, `VIP골프바우처_증빙자료_${today}.xlsx`);
+  };
+
   return (
     <Shell page={page} go={go}>
-      <h2 style={{fontSize:"1.2rem",fontWeight:800,color:"var(--text)",marginBottom:18}}>📎 증빙자료 관리</h2>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+        <h2 style={{fontSize:"1.2rem",fontWeight:800,color:"var(--text)"}}>📎 증빙자료 관리</h2>
+        <button className="btn btn-g" onClick={exportExcel} style={{fontSize:"0.82rem",padding:"9px 18px",gap:5}}>
+          📥 엑셀 다운로드
+        </button>
+      </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
         <div>
           <input className="inp" value={search} onChange={e=>setSrc(e.target.value)} placeholder="예약자명 / 바우처코드 검색" style={{marginBottom:10}}/>
