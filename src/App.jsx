@@ -80,7 +80,7 @@ const DEPTS = [
   {key:"support", label:"지원부문",      color:"#C04020", nums:[14,...Array.from({length:9},(_,i)=>142+i)]},
   {key:"common",  label:"그룹 공통",     color:"#507060", nums:[...Array.from({length:5},(_,i)=>3+i),...Array.from({length:25},(_,i)=>15+i)]},
 ];
-const vNum = c => parseInt((c||"").replace(/[^0-9]/g,""),10);
+const vNum = c => parseInt((c||"").slice(-3),10);
 const getDept = c => { const n=vNum(c); return DEPTS.find(d=>d.nums.includes(n))||null; };
 
 // ── DATA ──────────────────────────────────────────────────────────────────────
