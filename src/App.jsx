@@ -74,11 +74,11 @@ const G = () => (
 // ── DEPT ─────────────────────────────────────────────────────────────────────
 const DEPTS = [
   {key:"webcash", label:"웹케시부문",    color:"#2E7D5E", nums:[1,2,8,9,...Array.from({length:36},(_,i)=>40+i)]},
-  {key:"coocon",  label:"쿠콘부문",      color:"#3D7AB5", nums:[10,11,...Array.from({length:28},(_,i)=>76+i)]},
+  {key:"coocon",  label:"쿠콘부문",      color:"#3D7AB5", nums:[10,11,39,...Array.from({length:28},(_,i)=>76+i)]},
   {key:"bizplay", label:"비즈플레이부문", color:"#6B4FA0", nums:[12,13,...Array.from({length:28},(_,i)=>104+i)]},
   {key:"growth",  label:"성장비즈부문",   color:"#B07820", nums:Array.from({length:10},(_,i)=>132+i)},
   {key:"support", label:"지원부문",      color:"#C04020", nums:[14,...Array.from({length:9},(_,i)=>142+i)]},
-  {key:"common",  label:"그룹 공통",     color:"#507060", nums:[...Array.from({length:5},(_,i)=>3+i),...Array.from({length:25},(_,i)=>15+i)]},
+  {key:"common",  label:"그룹 공통",     color:"#507060", nums:[...Array.from({length:5},(_,i)=>3+i),...Array.from({length:24},(_,i)=>15+i)]},
 ];
 const vNum = c => parseInt((c||"").slice(-3),10);
 const getDept = c => { const n=vNum(c); return DEPTS.find(d=>d.nums.includes(n))||null; };
