@@ -988,10 +988,18 @@ const AdminSettle = ({reservations, page, go}) => {
 
 // ── ADMIN EVIDENCE ────────────────────────────────────────────────────────────
 const AdminEvd = ({reservations, page, go}) => {
-  const [evMap, setEv] = useState({});
+  const [evMap, setEvRaw] = useState(()=>{
+    try { return JSON.parse(localStorage.getItem("vip_evMap")||"{}"); } catch { return {}; }
+  });
+  const setEv = fn => setEvRaw(prev => {
+    const next = typeof fn==="function" ? fn(prev) : fn;
+    try { localStorage.setItem("vip_evMap", JSON.stringify(next)); } catch {}
+    return next;
+  });
   const [selR, setSelR] = useState(null);
   const [memo, setMemo] = useState("");
   const [search, setSrc] = useState("");
+  const [saveMsg, setSaveMsg] = useState("");
   const fRef = useRef();
   const filtered = reservations.filter(r=>{const q=search.toLowerCase();return !q||r.customerName.includes(q)||r.voucherCode.toLowerCase().includes(q)||r.reservationNumber.toLowerCase().includes(q);});
   const ev = selR?(evMap[selR.id]||{files:[],memo:""}):null;
@@ -1002,10 +1010,14 @@ const AdminEvd = ({reservations, page, go}) => {
       else res({name:f.name,type:"file",url:""});
     }))).then(nf=>{
       setEv(p=>{const c=p[selR.id]||{files:[],memo:""};return {...p,[selR.id]:{...c,files:[...c.files,...nf]}};});
+      setSaveMsg("✅ 파일이 저장됐어요!"); setTimeout(()=>setSaveMsg(""),2500);
     });
     e.target.value="";
   };
-  const saveMemo = () => { setEv(p=>{const c=p[selR.id]||{files:[],memo:""};return {...p,[selR.id]:{...c,memo}};}); };
+  const saveMemo = () => {
+    setEv(p=>{const c=p[selR.id]||{files:[],memo:""};return {...p,[selR.id]:{...c,memo}};});
+    setSaveMsg("✅ 메모가 저장됐어요!"); setTimeout(()=>setSaveMsg(""),2500);
+  };
   const rmFile = i => { setEv(p=>{const c=p[selR.id]||{files:[],memo:""};return {...p,[selR.id]:{...c,files:c.files.filter((_,j)=>j!==i)}};}) };
   return (
     <Shell page={page} go={go}>
